@@ -1,10 +1,13 @@
 package com.eazybytes.accounts.service.impl;
 
 import com.eazybytes.accounts.constants.AccountConstants;
+import com.eazybytes.accounts.dto.AccountDto;
 import com.eazybytes.accounts.dto.CustomerDto;
 import com.eazybytes.accounts.entity.Account;
 import com.eazybytes.accounts.entity.Customer;
 import com.eazybytes.accounts.exception.CustomerAlreadyExistsException;
+import com.eazybytes.accounts.exception.ResourceNotFoundException;
+import com.eazybytes.accounts.mapper.AccountMapper;
 import com.eazybytes.accounts.mapper.CustomerMapper;
 import com.eazybytes.accounts.repository.AccountRepository;
 import com.eazybytes.accounts.repository.CustomerRepository;
@@ -47,6 +50,37 @@ public class AccountServiceImpl implements IAccountService {
         account.setCreatedAt(LocalDateTime.now());
         account.setCreatedBy("Admin");
         return account;
+    }
+
+    public CustomerDto fetchAccount(String mobileNumber){
+        Customer customer = customerRepository.findByMobileNumber(mobileNumber).orElseThrow(
+                ()-> new ResourceNotFoundException("Customer","mobileNumber", mobileNumber));
+        Account account = accountRepository.findByCustomerId(customer.getCustomerId());
+        CustomerDto customerDto = CustomerMapper.mapToCustomerDto(customer, new CustomerDto());
+        customerDto.setAccountDto(AccountMapper.mapToAccountDto(account, new AccountDto()));
+        return customerDto;
+    }
+
+    public boolean updateAccount(CustomerDto customerDto) {
+        boolean isUpdated = false;
+        AccountDto accountDto = customerDto.getAccountDto();
+        if(accountDto != null){
+            Account account = accountRepository.findById(accountDto.getAccountNumber()).orElseThrow(
+                    ()-> new ResourceNotFoundException("Account", "AccountNumber", accountDto.getAccountNumber().toString())
+                    );
+            AccountMapper.mapToAccount(accountDto, account);
+            account = accountRepository.save(account);
+
+            Long customerId = account.getCustomerId();
+            Customer customer = customerRepository.findById(customerId).orElseThrow(
+                    ()-> new ResourceNotFoundException("Customer", "CustomerID", customerId.toString())
+
+            );
+            customerRepository.save(customer);
+            isUpdated = true;
+
+        }
+        return isUpdated;
     }
 
 }
