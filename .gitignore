@@ -29,5 +29,8 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
+# Ignore all temporary files that ends with ~
+*~
+
 ### VS Code ###
 .vscode/
